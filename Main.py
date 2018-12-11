@@ -22,7 +22,7 @@ def GetComments(username):
     comment_list = []
 
     for comment in user.comments.new(limit=None):
-        comment_list.append(comment)
+        comment_list.append({'body': comment.body, 'author': comment.author.name})
 
     print("Comments retrieved, taking {} seconds".format(str(datetime.now() - time)))
 
@@ -34,9 +34,25 @@ def WriteComments(comment_string):
     with open('second_comments.txt', 'w', encoding='utf-8') as text_file:
         text_file.write(comment_string)
 
+def GetSubmissions(username):
+    time = datetime.now()
 
+    user = reddit.redditor(username)
+
+    post_list = []
+
+    for post in user.submissions.new():
+        if hasattr(post, 'selftext'):
+            post_list.append({'body': post.selftext, 'author': post.author.name})
+
+    print("Posts retrieved taking {} seconds".format(str(datetime.now()-time)))
+
+    return post_list
 
 if __name__ == '__main__':
+
+    start_time = datetime.now()
+
     reddit = praw.Reddit(client_id=CLIENTID,
                          client_secret=CLIENTSECRET,
                          user_agent=useragent,
@@ -49,9 +65,17 @@ if __name__ == '__main__':
 
     base_comments = GetComments(base_username)
 
+    base_posts = GetSubmissions(base_username)
+
+    base_comments.extend(base_posts)
+
     second_username = input("Input user you want to check: ")
 
     second_comments = GetComments(second_username)
+
+    second_posts = GetSubmissions(second_username)
+
+    second_comments.extend(second_posts)
 
 
     number_of_comments = min(len(base_comments), len(second_comments))
@@ -69,10 +93,11 @@ if __name__ == '__main__':
     else:
         print("Same Length")
 
-    texts = [comment.body for comment in base_comments]
-    authors = [comment.author.name for comment in base_comments]
-    texts.extend([comment.body for comment in second_comments])
-    authors.extend([comment.author.name for comment in second_comments])
+
+    texts = [comment['body'] for comment in base_comments]
+    authors = [comment['author'] for comment in base_comments]
+    texts.extend([comment['body'] for comment in second_comments])
+    authors.extend([comment['author'] for comment in second_comments])
 
     time = datetime.now()
 
@@ -91,9 +116,11 @@ if __name__ == '__main__':
 
     predictions = svm.predict(X_test)
 
-    accuracy = accuracy_score(y_test, predictions)
+    accuracy = (accuracy_score(y_test, predictions)*100)
 
-    print("I am {} sure that {} is not {}".format(str(accuracy), second_username, base_username))
+    print("I am {}% sure that {} is not {}".format(str(accuracy), second_username, base_username))
 
     print("This calculation took {} seconds".format(str(datetime.now()-time)))
+
+    print("Taking {} seconds overall".format(str(datetime.now()-start_time)))
 
