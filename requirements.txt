@@ -1,0 +1,11 @@
+certifi==2018.11.29
+chardet==3.0.4
+idna==2.8
+numpy==1.15.4
+praw==6.0.0
+prawcore==1.0.0
+requests==2.21.0
+scikit-learn==0.20.1
+scipy==1.1.0
+update-checker==0.16
+urllib3==1.24.1
