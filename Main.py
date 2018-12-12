@@ -13,6 +13,14 @@ CLIENTSECRET=os.getenv('CLIENT_SECRET')
 CLIENTPASSWORD = os.getenv('CLIENT_PASSWORD')
 useragent = "script:IsUser?:v1"
 
+reddit = praw.Reddit(client_id=CLIENTID,
+                     client_secret=CLIENTSECRET,
+                     user_agent=useragent,
+                     username='IsThisAUserBot',
+                     password=CLIENTPASSWORD
+                     )
+
+
 def GetComments(username):
 
     time = datetime.now()
@@ -30,53 +38,7 @@ def GetComments(username):
 
     return comment_list
 
-def WriteComments(comment_string):
-    with open('second_comments.txt', 'w', encoding='utf-8') as text_file:
-        text_file.write(comment_string)
-
-def GetSubmissions(username):
-    time = datetime.now()
-
-    user = reddit.redditor(username)
-
-    post_list = []
-
-    for post in user.submissions.new():
-        if hasattr(post, 'selftext'):
-            post_list.append({'body': post.selftext, 'author': post.author.name})
-
-    print("Posts retrieved taking {} seconds".format(str(datetime.now()-time)))
-
-    return post_list
-
-if __name__ == '__main__':
-
-    start_time = datetime.now()
-
-    reddit = praw.Reddit(client_id=CLIENTID,
-                         client_secret=CLIENTSECRET,
-                         user_agent=useragent,
-                         username='IsThisAUserBot',
-                         password=CLIENTPASSWORD
-                         )
-
-
-    base_username = input("Input user you think this is: ")
-
-    base_comments = GetComments(base_username)
-
-    base_posts = GetSubmissions(base_username)
-
-    base_comments.extend(base_posts)
-
-    second_username = input("Input user you want to check: ")
-
-    second_comments = GetComments(second_username)
-
-    second_posts = GetSubmissions(second_username)
-
-    second_comments.extend(second_posts)
-
+def CompareUsers(base_comments,second_comments):
 
     number_of_comments = min(len(base_comments), len(second_comments))
 
@@ -92,7 +54,6 @@ if __name__ == '__main__':
             number_to_remove -= 1
     else:
         print("Same Length")
-
 
     texts = [comment['body'] for comment in base_comments]
     authors = [comment['author'] for comment in base_comments]
@@ -118,9 +79,77 @@ if __name__ == '__main__':
 
     accuracy = (accuracy_score(y_test, predictions)*100)
 
-    print("I am {}% sure that {} is not {}".format(str(accuracy), second_username, base_username))
-
     print("This calculation took {} seconds".format(str(datetime.now()-time)))
 
+    return accuracy
+
+
+
+def WriteComments(comment_string):
+    with open('second_comments.txt', 'w', encoding='utf-8') as text_file:
+        text_file.write(comment_string)
+
+def GetSubmissions(username):
+    time = datetime.now()
+
+    user = reddit.redditor(username)
+
+    post_list = []
+
+    for post in user.submissions.new():
+        if hasattr(post, 'selftext'):
+            post_list.append({'body': post.selftext, 'author': post.author.name})
+
+    print("Posts retrieved taking {} seconds".format(str(datetime.now()-time)))
+
+    return post_list
+
+def PrimaryFunction(base_username,second_username):
+
+    start_time = datetime.now()
+
+    base_comments = GetComments(base_username)
+
+    base_posts = GetSubmissions(base_username)
+
+    base_comments.extend(base_posts)
+
+
+    second_comments = GetComments(second_username)
+
+    second_posts = GetSubmissions(second_username)
+
+    second_comments.extend(second_posts)
+
+    accuracy = CompareUsers(base_comments,second_comments)
+
+    if accuracy > 50:
+        result = "I am {}% sure that {} is not {}".format(str(accuracy), base_username, second_username)
+    else:
+        result = "It looks like {} is {}. Theres only a {}% chance they are not".format(second_username,base_username, accuracy)
+
+    print(result)
+
     print("Taking {} seconds overall".format(str(datetime.now()-start_time)))
+
+    return result
+
+
+if __name__ == '__main__':
+
+    start_time = datetime.now()
+
+    reddit = praw.Reddit(client_id=CLIENTID,
+                         client_secret=CLIENTSECRET,
+                         user_agent=useragent,
+                         username='IsThisAUserBot',
+                         password=CLIENTPASSWORD
+                         )
+
+
+    base_username = input("Input user you think this is: ")
+
+    second_username = input("Input user you want to check: ")
+
+    PrimaryFunction(base_username,second_username)
 
